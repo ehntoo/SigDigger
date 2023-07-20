@@ -37,11 +37,11 @@ jobs:
         path: Scripts/*.AppImage
 
   build-macos:
-    runs-on: macos-11
+    runs-on: macos-12
     steps:
-    - uses: actions/setup-python@v3
+    - uses: actions/setup-python@v4
       with:
-        python-version: '3.9' # Version range or exact version of a Python version to use, using SemVer's version range syntax
+        python-version: '3.11' # Version range or exact version of a Python version to use, using SemVer's version range syntax
     
     - uses: actions/checkout@v2
     - name: Setup interactive shell session
@@ -49,11 +49,9 @@ jobs:
       if: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.debug_enabled }}
       
     - name: Install Qt
-      uses: jurplel/install-qt-action@v2
+      uses: jurplel/install-qt-action@v3
       with:
-        version: 5.14.2
-        setup-python: false
-        py7zrversion: '==0.18.1'
+        cache: 'true'
 
     - name: Install sndfile
       run: brew install libsndfile
@@ -65,10 +63,18 @@ jobs:
       run: brew install curl
 
     - name: Install FFTW3
-      run: brew install fftw
+      run: brew install fftw gnu-sed
 
     - name: Adding SoapySDR taps (Pothos)
       run: brew tap pothosware/homebrew-pothos && brew update
+
+    - name: Patch pothos formula
+      run: |
+        cd $(brew --repository pothosware/homebrew-pothos)
+        gsed -i '12ipatch do' pothos.rb
+        gsed -i '13i  url "https://github.com/pothosware/PothosCore/commit/092d1209b0fd0aa8a1733706c994fa95e66fd017.patch"' pothos.rb
+        gsed -i '14i  sha256 "678598a8cb1f55b10d2e3d201004e800982aab78c34ed74185b4fd9ea3577f84"' pothos.rb
+        gsed -i '15iend' pothos.rb
 
     - name: Install SoapySDR (Pothos)
       run: brew install pothossoapy
@@ -110,7 +116,7 @@ jobs:
       run: |
         cd Scripts
         chmod a+x dist-dmg.sh
-        SIGDIGGER_EMBED_SOAPYSDR=1 BUILDTYPE=Debug ./dist-dmg.sh
+        PKG_CONFIG_PATH="$(brew --prefix libsndfile)/pkgconfig" CFLAGS="-I$(brew --prefix volk)/include -I$(brew --prefix libsndfile)/include" LDFLAGS="-L$(brew --prefix volk)/lib -L$(brew --prefix libsndfile)/lib" SIGDIGGER_EMBED_SOAPYSDR=1 BUILDTYPE=Debug ./dist-dmg.sh
         cd ..
 
     - name: Archive .DMG files

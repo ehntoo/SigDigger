@@ -313,7 +313,7 @@ function build()
         fi
 	
         cd SuWidgets
-        try "Running QMake (SuWidgets)..." qmake SuWidgetsLib.pro "CONFIG += $QMAKE_BUILDTYPE" PREFIX="$DEPLOYROOT/usr"
+        try "Running QMake (SuWidgets)..." qmake SuWidgetsLib.pro "CONFIG += $QMAKE_BUILDTYPE" "QT_CONFIG -= no-pkg-config" "PKG_CONFIG = /opt/homebrew/bin/pkg-config" "CONFIG += link_pkgconfig" PREFIX="$DEPLOYROOT/usr"
         try "Building SuWidgets..."        $MAKE -j $THREADS
         try "Deploying SuWidgets..."       $MAKE install
         cd ..
